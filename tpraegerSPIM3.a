@@ -1,0 +1,142 @@
+#----------------------------------------------------------------------------#
+# Programmer: Torin Praeger 
+# 
+# Program: tpraegerSPIM3.a
+# 
+# Purpose: A program to take in an integer between 1 and 44 and find 
+# the Fibonacci sequence for iterations equal to the integer and the 
+# sum of the values in the sequence
+#
+# Input: An integer n, where 1 <= n <= 44 from standard user entry on 
+# keyboard
+# 
+# Output: The nth term of the Fibonacci secquence and the nth partial sum 
+# of the Fibonacci sequence both where n is the previousy entered integer 
+# 
+#----------------------------------------------------------------------------#
+		.data
+prompt:	.asciiz "Please enter an integer: "
+done:  	.asciiz "\nProgram exited succesfully"
+equals:	.asciiz " = "
+plus:	.asciiz " + "
+one:	.asciiz "1 = 1 "
+#----------------------------------------------------------------------------#
+		.text
+		.globl main
+main:
+
+	li 	$v0, 4					#output prompt
+	la 	$a0, prompt
+	syscall
+
+	li 	$v0, 5					#read in the value of n
+	syscall
+	move $t4, $v0				#create a copy of n
+
+	bne	$t4, 1, caseOne			#if n = 1 output 1 = 1 and quit
+	li 	$v0, 4							
+	la 	$a0, one
+	syscall
+
+	j 	endMain					#jump to endMain
+
+caseOne:
+
+	li $t1, 1
+	sub $v0, $v0, $t1			#subtract 1 from n 
+	
+	
+	move $a0, $v0				#a0 stores n			
+	li 	$a1, 1					#numA
+	li	$a2, 1					#numB
+	
+	jal Fib 					#initial call to Fib
+	move $t3, $v1 				#sum returned in $v1, moved to $t3
+	
+	li 	$a0, 1					#output additional 1
+	li	$v0, 1
+	syscall
+
+	bne	$t4, 2, caseTwo			#if n = two, output extra + 1
+	li	$v0, 4
+	la 	$a0, plus
+	syscall
+
+	li 	$a0, 1					#output additional 1 for n = 2 
+	li	$v0, 1
+	syscall
+
+caseTwo:
+
+	la 	$a0, equals				#output an '='
+	li 	$v0, 4				
+	syscall
+
+	move $a0, $t3				#output nth partial sum
+	li	$v0, 1
+	syscall
+
+endMain:
+	la 	$a0, done	
+	li	$v0, 4			
+	syscall						#output exit display
+
+	li 	$v0, 10					#halt program
+	syscall
+
+#----------------------------------------------------------------------------#
+	.data
+	.text
+Fib:							#$a0 = count, $a1 = numA, $a2 = numB
+
+	subu	$sp, $sp, 40		#move frame 40 bytes down
+	sw	$fp, 16($sp)			#store $fp
+	sw 	$ra, 20($sp)			#store $ra
+	sw 	$a0, 24($sp)			#store local variables
+	sw 	$a1, 28($sp)
+	sw 	$a2, 32($sp)
+	
+	bne $a0, 1, baseCase 		#base case
+
+								#finding nth partial sum
+								#nth partial of Fibonacci sequence =(n+n+1) -1
+	li	$t3, 1
+	move $t6, $a1 				#$t6 = numA, temp variable		
+	move $a1, $a2				#numA = num B
+	add $a2, $a2, $t6			#numB = numB + numA
+	add $v1, $a1, $a2			#set $v1 to partial sum
+	sub $v1, $v1, $t3			#subtract 1 from $v1
+
+	jr  $ra 					#begin returning up recursive calls
+
+baseCase:						#end base case
+
+	li 	$t7, 1
+	sub $a0, $a0, $t7			#subtract 1 from n
+	
+	move $t6, $a1 				#$t6 = numA, temp variable
+	move $a1, $a2				#numA = num B
+	add $a2, $a2, $t6			#numB = numB + numA
+
+	jal Fib 					#recursive call to fibonacci
+
+	lw	$fp, 16($sp)			#load $fp
+	lw 	$ra, 20($sp)			#load $ra
+	lw 	$a0, 24($sp)			#load local variables
+	lw 	$a1, 28($sp)
+	lw 	$a2, 32($sp)
+	
+	addu	$sp, $sp, 40		#move frame 40 bytes up, return to previous
+
+	move $t2, $a0				#$t2 = $a0
+	move $a0, $a2				#output nth term of sequence 
+	li 	$v0, 1					
+	syscall
+
+	la 	$a0, plus				#output a '+'
+	li	$v0, 4					
+	syscall
+
+	move $a0, $t2				#$a0 = $t2
+	jr 	$ra 					#return from current recursive call
+#----------------------------------------------------------------------------#
